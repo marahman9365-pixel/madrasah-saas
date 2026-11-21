@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>প্রতিষ্ঠান ড্যাশবোর্ড | EduSaaS BD</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printableMarksheet, #printableMarksheet * { visibility: visible; }
+      #printableMarksheet { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-success px-3">
+    <div class="container-fluid">
+      <span class="navbar-brand fw-bold" id="navInstName">লোড হচ্ছে...</span>
+      <div class="d-flex align-items-center gap-3">
+        <span class="badge bg-light text-dark" id="navPlanBadge">Plan: ...</span>
+        <button id="logoutBtn" class="btn btn-outline-light btn-sm">লগআউট</button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="subscriptionAlert" class="container mt-3 d-none">
+    <div class="alert alert-danger d-flex justify-content-between align-items-center">
+      <span id="alertText">আপনার সাবস্ক্রিপশনের মেয়াদ শেষ হয়ে গেছে অথবা শিক্ষার্থী সীমা পূর্ণ হয়েছে।</span>
+      <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#upgradeModal">প্যাকেজ আপগ্রেড করুন</button>
+    </div>
+  </div>
+
+  <div class="container py-4">
+    <ul class="nav nav-tabs mb-4" id="dashboardTabs">
+      <li class="nav-item">
+        <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#studentsTab">শিক্ষার্থী ব্যবস্থাপনা</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#resultsTab">রেজাল্ট ও মার্কশিট</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#feesTab">বেতন ও ফি কালেকশন</button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- ট্যাব ১: শিক্ষার্থী ব্যবস্থাপনা -->
+      <div class="tab-pane fade show active" id="studentsTab">
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white fw-bold">নতুন শিক্ষার্থী যুক্ত করুন</div>
+              <div class="card-body">
+                <form id="addStudentForm">
+                  <div class="mb-2">
+                    <label class="form-label small">শ্রেণি নির্বাচন করুন</label>
+                    <select id="stuClass" class="form-select form-select-sm" required>
+                      <option value="ebtedayee_5">ইবতেদায়ী ৫ম শ্রেণি</option>
+                      <option value="dakhil_9_10">দাখিল ৯ম/১০ম শ্রেণি</option>
+                      <option value="alim_1_2">আলিম ১ম/২য় বর্ষ</option>
+                      <option value="secondary_9_10">মাধ্যমিক ৯ম/১০ম শ্রেণি</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small">রোল নম্বর</label>
+                    <input type="number" id="stuRoll" class="form-control form-control-sm" required>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small">শিক্ষার্থীর নাম</label>
+                    <input type="text" id="stuName" class="form-control form-control-sm" required>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small">পিতার নাম</label>
+                    <input type="text" id="stuFather" class="form-control form-control-sm" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">অভিভাবকের মোবাইল</label>
+                    <input type="tel" id="stuPhone" class="form-control form-control-sm" placeholder="017XXXXXXXX">
+                  </div>
+                  <button type="submit" id="addStuBtn" class="btn btn-success btn-sm w-100 fw-bold">শিক্ষার্থী সংরক্ষণ করুন</button>
+                </form>
+                <div id="stuMsg" class="mt-2 small text-center"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold">ভর্তিকৃত শিক্ষার্থী (<span id="stuCount">0</span> / <span id="stuMax">50</span>)</span>
+                <select id="filterClass" class="form-select form-select-sm w-auto">
+                  <option value="all">সকল শ্রেণি</option>
+                  <option value="ebtedayee_5">ইবতেদায়ী ৫ম</option>
+                  <option value="dakhil_9_10">দাখিল ৯ম/১০ম</option>
+                  <option value="alim_1_2">আলিম ১ম/২য়</option>
+                  <option value="secondary_9_10">মাধ্যমিক ৯ম/১০ম</option>
+                </select>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>রোল</th>
+                      <th>নাম ও পিতার নাম</th>
+                      <th>শ্রেণি</th>
+                      <th>মোবাইল</th>
+                      <th>অ্যাকশন</th>
+                    </tr>
+                  </thead>
+                  <tbody id="studentsTableBody">
+                    <tr><td colspan="5" class="text-center py-3">লোড হচ্ছে...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ট্যাব ২: রেজাল্ট ও মার্কশিট -->
+      <div class="tab-pane fade" id="resultsTab">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white fw-bold">পরীক্ষার নম্বর এন্ট্রি করুন</div>
+              <div class="card-body">
+                <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label small">পরীক্ষার নাম</label>
+                    <select id="resExamName" class="form-select form-select-sm">
+                      <option value="half_yearly_2026">অর্ধ-বার্ষিক পরীক্ষা - ২০২৬</option>
+                      <option value="annual_2026">বার্ষিক পরীক্ষা - ২০২৬</option>
+                      <option value="pre_test_2026">প্রাক-নির্বাচনী পরীক্ষা - ২০২৬</option>
+                      <option value="test_2026">নির্বাচনী পরীক্ষা - ২০২৬</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">শ্রেণি নির্বাচন করুন</label>
+                    <select id="resClass" class="form-select form-select-sm">
+                      <option value="">-- শ্রেণি বাছুন --</option>
+                      <option value="ebtedayee_5">ইবতেদায়ী ৫ম শ্রেণি</option>
+                      <option value="dakhil_9_10">দাখিল ৯ম/১০ম শ্রেণি</option>
+                      <option value="alim_1_2">আলিম ১ম/২য় বর্ষ</option>
+                      <option value="secondary_9_10">মাধ্যমিক ৯ম/১০ম শ্রেণি</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small">শিক্ষার্থী নির্বাচন করুন</label>
+                  <select id="resStudentSelect" class="form-select form-select-sm">
+                    <option value="">-- প্রথমে শ্রেণি নির্বাচন করুন --</option>
+                  </select>
+                </div>
+                <form id="marksEntryForm" class="d-none">
+                  <div id="subjectsInputContainer" class="mb-3"></div>
+                  <button type="submit" id="saveResultBtn" class="btn btn-primary btn-sm w-100 fw-bold">রেজাল্ট সংরক্ষণ ও হিসাব করুন</button>
+                </form>
+                <div id="resMsg" class="mt-2 small text-center"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold">প্রকাশিত ফলাফল ও মার্কশিট</span>
+                <button id="refreshResultsBtn" class="btn btn-outline-secondary btn-sm">রিফ্রেশ</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>রোল ও নাম</th>
+                      <th>মোট নম্বর</th>
+                      <th>GPA / গ্রেড</th>
+                      <th>মার্কশিট</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resultsTableBody">
+                    <tr><td colspan="4" class="text-center py-3 text-muted">শ্রেণি নির্বাচন করলে ফলাফল দেখাবে।</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ট্যাব ৩: বেতন ও ফি কালেকশন -->
+      <div class="tab-pane fade" id="feesTab">
+        <div class="row g-4">
+          <div class="col-md-5">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white fw-bold">নতুন ফি / বেতন গ্রহণ করুন</div>
+              <div class="card-body">
+                <form id="feeCollectionForm">
+                  <div class="mb-2">
+                    <label class="form-label small">শ্রেণি নির্বাচন করুন</label>
+                    <select id="feeClass" class="form-select form-select-sm" required>
+                      <option value="">-- শ্রেণি বাছুন --</option>
+                      <option value="ebtedayee_5">ইবতেদায়ী ৫ম শ্রেণি</option>
+                      <option value="dakhil_9_10">দাখিল ৯ম/১০ম শ্রেণি</option>
+                      <option value="alim_1_2">আলিম ১ম/২য় বর্ষ</option>
+                      <option value="secondary_9_10">মাধ্যমিক ৯ম/১০ম শ্রেণি</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small">শিক্ষার্থী নির্বাচন করুন</label>
+                    <select id="feeStudentSelect" class="form-select form-select-sm" required>
+                      <option value="">-- প্রথমে শ্রেণি নির্বাচন করুন --</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small">ফির ধরন</label>
+                    <select id="feeType" class="form-select form-select-sm" required>
+                      <option value="মাসিক বেতন">মাসিক বেতন</option>
+                      <option value="ভর্তি / সেশন ফি">ভর্তি / সেশন ফি</option>
+                      <option value="পরীক্ষার ফি">পরীক্ষার ফি</option>
+                      <option value="রেজিস্ট্রেশন / ফরম পূরণ ফি">রেজিস্ট্রেশন / ফরম পূরণ ফি</option>
+                      <option value="অন্যান্য ফি">অন্যান্য ফি</option>
+                    </select>
+                  </div>
+                  <div class="row g-2 mb-3">
+                    <div class="col-6">
+                      <label class="form-label small">মাস / বিবরণ</label>
+                      <input type="text" id="feeMonth" class="form-control form-control-sm" placeholder="যেমন: নভেম্বর ২০২৬" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small">টাকার পরিমাণ (৳)</label>
+                      <input type="number" id="feeAmount" class="form-control form-control-sm" min="1" required>
+                    </div>
+                  </div>
+                  <button type="submit" id="saveFeeBtn" class="btn btn-success btn-sm w-100 fw-bold">রসিদ তৈরি ও সংরক্ষণ করুন</button>
+                </form>
+                <div id="feeMsg" class="mt-2 small text-center"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-7">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold">সাম্প্রতিক ফি আদায়ের তালিকা</span>
+                <span class="badge bg-success fs-6">মোট আদায়: <span id="totalFeeCollected">0</span> ৳</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>রসিদ নং / তারিখ</th>
+                      <th>শিক্ষার্থী</th>
+                      <th>বিবরণ</th>
+                      <th>পরিমাণ</th>
+                      <th>রসিদ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="feesTableBody">
+                    <tr><td colspan="5" class="text-center py-3 text-muted">লোড হচ্ছে...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- প্যাকেজ আপগ্রেড পপ-আপ -->
+  <div class="modal fade" id="upgradeModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title fw-bold">প্যাকেজ আপগ্রেড করুন</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small">আপনার প্রতিষ্ঠানের শিক্ষার্থী সীমা বাড়াতে নিচের যেকোনো প্যাকেজ বেছে নিয়ে আমাদের বিকাশ মার্চেন্ট নম্বরে পেমেন্ট করুন:</p>
+          <ul class="list-group mb-3 small">
+            <li class="list-group-item d-flex justify-content-between">
+              <span><strong>Standard প্যাকেজ</strong> (৫০০ শিক্ষার্থী)</span>
+              <span class="badge bg-primary">৫০০ টাকা / মাস</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span><strong>Pro প্যাকেজ</strong> (আনলিমিটেড শিক্ষার্থী)</span>
+              <span class="badge bg-success">১,০০০ টাকা / মাস</span>
+            </li>
+          </ul>
+          <div class="p-3 bg-light border rounded text-center">
+            <p class="mb-1 fw-bold">বিকাশ / নগদ (Personal/Merchant): 017XXXXXXXX</p>
+            <small class="text-muted">পেমেন্ট করে প্রতিষ্ঠানের EIIN বা নাম লিখে হোয়াটসঅ্যাপে ট্রানজেকশন আইডি পাঠালে ১০ মিনিটের মধ্যে অ্যাকাউন্ট আপগ্রেড হয়ে যাবে।</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- প্রিন্ট-রেডি মার্কশিট পপ-আপ -->
+  <div class="modal fade" id="marksheetModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header no-print">
+          <h5 class="modal-title fw-bold">একাডেমিক ট্রান্সক্রিপ্ট / মার্কশিট</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4" id="printableMarksheet"></div>
+        <div class="modal-footer no-print">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বন্ধ করুন</button>
+          <button type="button" onclick="window.print()" class="btn btn-success fw-bold">প্রিন্ট / PDF সেভ করুন</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- প্রিন্ট-রেডি মানি রসিদ পপ-আপ -->
+  <div class="modal fade" id="receiptModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header no-print">
+          <h5 class="modal-title fw-bold">মানি রসিদ (Money Receipt)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4" id="printableReceipt"></div>
+        <div class="modal-footer no-print">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বন্ধ করুন</button>
+          <button type="button" onclick="printReceipt()" class="btn btn-success fw-bold">রসিদ প্রিন্ট করুন</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function printReceipt() {
+      const content = document.getElementById("printableReceipt").innerHTML;
+      const win = window.open("", "", "width=700,height=600");
+      win.document.write(`
+        <html><head><title>মানি রসিদ</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        </head><body class="p-4">${content}</body></html>
+      `);
+      win.document.close();
+      win.focus();
+      setTimeout(() => { win.print(); win.close(); }, 500);
+    }
+  </script>
+  <script type="module" src="js/students.js"></script>
+  <script type="module" src="js/results.js"></script>
+  <script type="module" src="js/fees.js"></script>
+</body>
+</html>
